@@ -1,0 +1,32 @@
+{
+	"manifest_version": 2,
+	"name": "Stock Helper",
+	"version": "1.0.0",
+	"description": "股票信息，价格提示",
+	"icons": {
+		"16": "images/stocks16.png",
+		"32": "images/stocks32.png",
+		"48": "images/stocks48.png",
+		"64": "images/stocks64.png",
+		"128": "images/stocks128.png"
+	},
+	"browser_action": {
+		"default_icon": {
+			"24": "images/stocks24.png",
+			"48": "images/stocks48.png"
+		},
+		"default_title": "Stock Helper",
+		"default_popup": "index.htm"
+	},
+	"background": {
+		"page": "background.htm",
+		"persistent": true
+	},
+	"permissions": [
+		"*://hq.sinajs.cn/?list=*",
+		"*://www.sse.com.cn/js/common/*",
+		"*://www.ctxalgo.com/api/*",
+		"storage",
+		"notifications"
+	]
+}

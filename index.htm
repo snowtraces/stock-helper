@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css">
+    <script src="js/jquery-3.2.1.min.js"></script>
+    <script src="js/function.js"></script>
+    <script src="js/main.js"></script>
+    <title>SNOW</title>
+</head>
+
+<body>
+    <div id="wrap">
+        <div class="search-input">
+            <input type="text" name="word" id="word" autocomplete="on" />
+            <div id="wordHint"></div>
+            <input type="button" value="添加" id="add-btn">
+        </div>
+        <div class="main">
+            <ul id="show-list">
+            </ul>
+        </div>
+        <div class="btn">
+            <i class="material-icons">timelapse</i>
+            <select name="period-time" id="period-time">
+                <option value="0">0</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="30">30</option>
+                <option value="60">60</option>
+            </select>
+            <i class="material-icons">trending_up</i>
+            <select name="badge-price" id="badge-price">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="5">5</option>
+                <option value="7">7</option>
+                <option value="10">10</option>
+            </select>
+            <button id="getData-btn">
+                <span class="refresh-btn"><i class="material-icons">refresh</i></span>
+            </button>
+        </div>
+    </div>
+</body>
+
+</html>
