@@ -96,7 +96,7 @@ $(function () {
     clearTimeout(refreshTimeout);
 
     // 判断开始时间
-    // if(!checkTime()) return;
+    if(!checkTime()) return;
 
     // 刷新数据
     function doRefresh() {
