@@ -51,7 +51,6 @@ $(function () {
   function refreshList() {
     let titleInfo = "";
     let badgeFlage = 1;
-    badgeFlage
     if (autoRefreshTime <= 0) return;
     chrome.storage.sync.get(["stock", "warningPrice"], function (obj) {
       warningPrice = obj.warningPrice * 1;
