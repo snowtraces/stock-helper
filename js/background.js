@@ -71,6 +71,7 @@ $(function () {
     });
     badgeFlage = 1;
     if(titleInfo){
+      titleInfo = titleInfo.substr(0, titleInfo.length - 1);
       setTitle(titleInfo);
       setNotify(titleInfo);
     }
