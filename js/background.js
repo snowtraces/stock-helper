@@ -42,8 +42,6 @@ $(function () {
       if (obj.warningPrice) {
         warningPrice = obj.warningPrice;
       }
-
-      reBulidList();
     });
   }
 
@@ -92,18 +90,17 @@ $(function () {
 
   // 自动刷新
   function setPeriodTime(time) {
+    let autoRefreshFlag = 0;
     autoRefreshTime = time;
     clearTimeout(refreshTimeout);
-
-    // 判断开始时间
-    if(!checkTime()) return;
 
     // 刷新数据
     function doRefresh() {
       chrome.storage.sync.get("refreshTime", function (obj) {
         autoRefreshTime = obj.refreshTime;
       })
-      if (autoRefreshTime > 0) reBulidList();
+      if (autoRefreshFlag && autoRefreshTime > 0 && checkTime()) reBulidList();
+      autoRefreshFlag = 1;
       refreshTimeout = setTimeout(doRefresh, autoRefreshTime == 0 ? 3000 : autoRefreshTime * 1000);
     }
     doRefresh();
