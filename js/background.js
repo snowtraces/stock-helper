@@ -61,9 +61,9 @@ $(function () {
         var change = calcChange(dataArray[2], dataArray[3]);
         if (change != 99) {
           let tag = change > 0 ? "red" : (change < 0 ? "green" : "");
-          if (Math.abs(change) >= warningPrice) titleInfo = titleInfo + dataArray[0] + "    " + change + "\n";
-          if (warningPrice > 0 && badgeFlage == 1) {
-            setBadge(change, tag);
+          if (Math.abs(change) >= warningPrice) titleInfo = titleInfo + dataArray[0] + "   " + change + "\n";
+          if (warningPrice > 0 && Math.abs(change) >= warningPrice && badgeFlage == 1) {
+            setBadge(Math.abs(change) + "", tag);
             badgeFlage = 0;
           }
         }
@@ -90,7 +90,7 @@ $(function () {
 
   // 自动刷新
   function setPeriodTime(time) {
-    let autoRefreshFlag = 0;
+    var autoRefreshFlag = 0;
     autoRefreshTime = time;
     clearTimeout(refreshTimeout);
 
