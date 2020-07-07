@@ -1,4 +1,4 @@
-$(function () {
+{
 
   var ajaxcache = new Map();
   var chosenArray = new Set();
@@ -108,4 +108,4 @@ $(function () {
   }
 
   initList();
-});
+}

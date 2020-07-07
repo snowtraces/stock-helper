@@ -1,114 +1,106 @@
-$(function () {
+{
 
-  var ajaxcache = new Map();
-  var chosenArray = new Set();
-  var resultMap = new Map();
-  var basePath = "http://hq.sinajs.cn/?list=";
-  var dataPre = "hq_str_";
-  var refreshTimeout = 0;
-  var warningPrice = 0;
-  var shArray = new Array();
+  let ajaxcache = {};
+  let watchingStockList = [];
+  let dynamicStockData = {};
+  let basePath = "http://hq.sinajs.cn/?list=";
+  let refreshTimeout = 0;
+  let shArray = new Array();
 
-  // 隐藏提示内容
-  function hintHidden() {
-    $("#wordHint").empty().css("border", "1px solid transparent").css("background", "transparent");
+  /**
+   * 隐藏提示内容
+   */
+  const hintHidden = function () {
+    el('#wordHint').innerHTML = null
+    el('#wordHint').classList.remove('hint-show')
+    el('#wordHint').classList.add('hint-hidden')
   }
 
-  // 动态加载数据，加载完成后回调读取数据
-  function loadScript(url, callback) {
-    resultMap.clear();
+  /**
+   * 动态加载数据，加载完成后回调读取数据
+   */
+  const getCurrentPrice = function (url, callback) {
+    dynamicStockData = {}
     httpRequest(url, function (result) {
-      // 读取string，结果放入本地
+      let stockLines = result.split(';');
+      stockLines.pop();
+
       let reg = /var hq_str_(.*)=\"(.*)\"/gi;
-      let stockArray = result.split(";");
-      stockArray.pop();
-      stockArray.forEach(element => {
-        element.match(reg);
-        resultMap.set(RegExp.$1, RegExp.$2.split(","));
+      stockLines.forEach(line => {
+        line.match(reg);
+        dynamicStockData[RegExp.$1] = RegExp.$2.split(",");
       });
       callback();
     });
   }
 
-  // 初始化列表
-  function initList() {
-    // httpRequest("http://www.sse.com.cn/js/common/ssesuggestdataAll.js", function(result){
-    //   let reg = /_t\.push\({val:\"([0-9]{6})\",val2:\"(.*)\",val3:\"(.*)\"}\)/gi;
-    //   let stockArray = result.split(";");
-    //   stockArray.shift();
-    //   let tmpStr = ""
-    //   stockArray.forEach(element => {
-    //     element.match(reg);
-    //     shArray.push("sh" + RegExp.$1 + "|" + RegExp.$2 + "|" + RegExp.$3.toUpperCase());
-    //   });
-    // })
-    httpRequest("http://www.ctxalgo.com/api/stocks", function(result){
-      let reg = /\{?\"(.*)\":\"(.*)\"\}?/gi;
-      let stockArray = result.split(",");
-      let tmpStr = "";
-      stockArray.forEach(element => {
+  /**
+   * 初始化列表
+   */
+  const initList = function () {
+    httpRequest("http://www.sse.com.cn/js/common/ssesuggestdataAll.js", function (result) {
+      let reg = /_t\.push\({val:\"([0-9]{6})\",val2:\"(.*)\",val3:\"(.*)\"}\)/gi;
+      let allStock = result.split(";");
+      allStock.shift();
+      allStock.forEach(element => {
         element.match(reg);
-        shArray.push(RegExp.$1 + "|" + unicodeToChar(RegExp.$2) + "|" + RegExp.$3.toUpperCase());
-      });
-    })
-    httpRequest("http://www.ctxalgo.com/api/indices", function(result){
-      let reg = /\{?\"(.*)\":\"(.*)\"\}?/gi;
-      let stockArray = result.split(",");
-      let tmpStr = "";
-      stockArray.forEach(element => {
-        element.match(reg);
-        shArray.push(RegExp.$1 + "|" + unicodeToChar(RegExp.$2) + "|" + RegExp.$3.toUpperCase());
+        shArray.push("sh" + RegExp.$1 + "|" + RegExp.$2 + "|" + RegExp.$3.toUpperCase());
       });
     })
 
     chrome.storage.sync.get(["stock", "refreshTime", "warningPrice"], function (obj) {
       // 股票列表
       if (obj.stock) {
-        let temArray = obj.stock.split("#");
-        chosenArray = new Set(temArray);
+        watchingStockList = obj.stock.split("#");
       }
       // 设置自动刷新时间
       if (obj.refreshTime) {
-        $("#period-time").val(obj.refreshTime);
+        el("#period-time").value = obj.refreshTime
         setPeriodTime();
       }
       // 设置提醒价格
       if (obj.warningPrice) {
-        $("#badge-price").val(obj.warningPrice);
+        el("#badge-price").value = obj.warningPrice;
         warningPrice = obj.warningPrice;
       }
       reBulidList();
     });
-    setBadge("","#fff");
+    setBadge("", "#fff");
     setTitle("");
   }
 
-  // 刷新列表
+  /**
+   * 刷新列表
+   */
   function refreshList() {
-    $("#show-list").empty();
-    chosenArray.forEach(element => {
-      // if (stockList[element]) {
-      var dataArray = resultMap.get(element);
+    el("#show-list").innerHTML = null
+    let nodeList = watchingStockList.map(stockCode => {
+      let dataArray = dynamicStockData[stockCode];
       if (!dataArray) return;
-      var change = calcChange(dataArray[2], dataArray[3]);
-      let changeStr;
-      if (change != 99) {
-        let tag = change > 0 ? "red" : (change < 0 ? "green" : "");
-        changeStr = "<span class=\"stock-change " + tag + "\">" + change + "%" + "</span>";
-      } else {
-        changeStr = "<span class=\"stock-change\">--</span>"
+
+      let change = calcChange(dataArray[2], dataArray[3]);
+      let changeStr = `<span class="stock-change">--</span>`;
+      if (change !== null) {
+        changeStr = `<span class="stock-change ${change > 0 ? "red" : change < 0 ? "green" : ""}">${change}%</span>`;
       }
-      $("#show-list").append("<div class=\"stock-item\"  id=\"stock-" + element + "\"><li draggable=\"true\" id=\"" + element + "\"><span class=\"stock-code\">" + element +
-        "</span><span class=\"stock-name\">" + dataArray[0] + "</span>" +
-        "<span class=\"stock-price\">" + (dataArray[3] * 1).toFixed(2) + "</span>" +
-        changeStr +
-        "<span class=\"stock-remove\"><i class=\"material-icons\">remove</i></span>" + "</li></div>");
-      // }
-    });
+
+      return `<div class="stock-item"  id="stock-${stockCode}">
+          <li draggable="true" id="${stockCode}">
+            <span class="stock-code">${stockCode}</span>
+            <span class="stock-name">${dataArray[0]}</span>
+            <span class="stock-price">${(dataArray[3] * 1).toFixed(2)}</span>
+            ${changeStr}
+            <span class="stock-remove"><i class="material-icons">remove</i></span>
+          </li>
+        </div>`;
+    })
+    el('#show-list').innerHTML = nodeList.join('')
   }
 
-  // 列表拖动控制和重新排序
-  function listDragController(){
+  /**
+   * 列表拖动控制和重新排序
+   */
+  const listDragController = function () {
     // 拖动前准备
     function startDrag(e) {
       e.dataTransfer.setData('Text', e.target.id + ';' + e.target.parentElement.id);
@@ -117,126 +109,114 @@ $(function () {
     function exchangeElement(e) {
       e.preventDefault();
       let el = e.target;
-      console.info(el.tagName)
-      let PE, //要插入位置的父元素
-        CE; //需要交换的元素
-      if (el.tagName.toLowerCase() !== 'div') {
+      while (el.tagName.toLowerCase() !== 'div') {
         el = el.parentElement;
       }
-      if (el.tagName.toLowerCase() !== 'div') {
-        el = el.parentElement;
-      }
-      PE = el;
-      CE = el.querySelector('li');
+
+      let PE = el//要插入位置的父元素
+      // let CE = el.querySelector('li'); //需要交换的元素
       if (!PE.classList.contains('stock-item')) {
         return;
       }
       const data = e.dataTransfer.getData('Text').split(';');
       //交换元素
-      document.getElementById(data[1]).appendChild(CE);
-      PE.appendChild(document.getElementById(data[0]));
+      // document.getElementById(data[1]).appendChild(CE);
+      PE.before(document.getElementById(data[1]));
       reSortList();
     }
+
     // 重新排序
-    function reSortList(){
-      let stockCode = $(".stock-code");
-      let tmpArray = new Array();
-      $.each(stockCode,function(i,element){
-        tmpArray.push(element.textContent);
-      })
-      chosenArray = new Set(tmpArray);
+    const reSortList = function () {
+      const stockCodeEls = [...elAll('.stock-code')] || []
+      const stockList = stockCodeEls.map(el => el.textContent)
+
+      watchingStockList = stockList;
       chrome.storage.sync.set({
-        "stock": array2String(tmpArray, "#")
+        "stock": stockList.join("#")
       });
     }
 
-    const dragCon = document.getElementById('show-list');
-    dragCon.addEventListener('dragstart', startDrag, false);
-    dragCon.addEventListener('dragover', function (e) {
-      e.preventDefault();
-    }, false);
-    dragCon.addEventListener('drop', exchangeElement, false);
+    bindEvent('#show-list', 'dragstart', startDrag)
+    bindEvent('#show-list', 'dragover', function (e) { e.preventDefault() })
+    bindEvent('#show-list', 'drop', exchangeElement)
   }
 
-  // 重建列表
+  /**
+   * 重建列表
+   */
   function reBulidList() {
-    $(".refresh-btn").addClass("animation-rotate");
-    setTimeout(() => {
-      $(".refresh-btn").removeClass("animation-rotate");
+    el(".refresh-btn").classList.add("animation-rotate");
+    setTimeout(_ => {
+      el(".refresh-btn").classList.remove("animation-rotate");
     }, 980);
-    if (chosenArray.size <= 0) {
-      $("#show-list").empty();
+    if (watchingStockList.length === 0) {
+      el("#show-list").innerHTML = null;
       return;
     }
-    var path = basePath;
-    chosenArray.forEach(element => {
-      path = path + element + ",";
-    });
-    loadScript(path, refreshList);
+    getCurrentPrice(basePath + watchingStockList.join(','), refreshList);
   }
 
-  // 添加输入框内容到列表
+  /**
+   * 添加输入框内容到列表
+   */
   function addToList() {
     hintHidden();
-    var wordStr = $("#word").val();
-    var patt = new RegExp("(s[z|h])?[0-9]{6}");
-    if (patt.test(wordStr)) {
-      chosenArray.add($("#word").val());
-      chrome.storage.sync.set({
-        "stock": array2String(chosenArray, "#")
-      });
+    let wordStr = el("#word").value;
+    if (/(s[z|h])?[0-9]{6}/.test(wordStr)) {
+      if (!watchingStockList.includes(wordStr)) {
+        watchingStockList.push(wordStr);
+        chrome.storage.sync.set({
+          "stock": watchingStockList.join('#')
+        });
+      }
       reBulidList();
     }
   }
 
-  // 点击添加触发，读取并刷新数据
-  $("#add-btn").on("click", addToList);
-
-  // 点击刷新触发，读取并刷新数据
-  $("#getData-btn").on("click", reBulidList);
-
-  // 搜索框提示
+  /**
+   * 搜索框提示
+   */
   function searchHint(getFuc) {
     console.log("begin...");
-    var wordEl = $("#word");
-    var hintCotainer = $("#wordHint");
-    var timeout = 0;
+    let timeout = 0;
 
     // 初始化，绑定事件
-    var init = function () {
-      wordEl.bind("keyup", doSearch);
-      wordEl.bind("focus", doSearch);
-      wordEl.bind("blur", hintHidden);
+    let init = function () {
+      bindEvent("#word", "keyup", doSearch)
+      bindEvent("#word", "focus", doSearch)
+      bindEvent("#word", "blur", hintHidden)
     }
 
     // 根据键盘输入内容开始查询数据库
     function doSearch(e) {
-      var keycode = 'which' in e ? e.which : e.keyCode;
+      let keycode = 'which' in e ? e.which : e.keyCode;
       if (keycode == "40" || keycode == "38") {
-        var current = hintCotainer.find(".hintItem.hover");
+        let current = el("#wordHint .hintItem.hover");
         if (keycode == "40") {
-          if (current.length > 0) {
-            var nextItem = current.removeClass("hover").next();
-            if (nextItem.length > 0) {
-              nextItem.addClass('hover');
-              wordEl.val(nextItem.children(".hintItem_w").html());
+          if (current) {
+            current.classList.remove("hover")
+            let nextItem = current.nextElementSibling;
+            if (nextItem) {
+              nextItem.classList.add('hover');
+              el("#word").value = nextItem.querySelector('.hintItem_w').innerText
             }
           } else {
-            var firstItem = hintCotainer.find(".hintItem:first");
-            firstItem.addClass("hover");
-            wordEl.val(firstItem.children(".hintItem_w").html());
+            let firstItem = el("#wordHint .hintItem:first");
+            firstItem.classList.add('hover');
+            el("#word").value = firstItem.querySelector('.hintItem_w').innerText
           }
         } else if (keycode == "38") {
-          if (current.length > 0) {
-            var prevItem = current.removeClass("hover").prev();
-            if (prevItem.length > 0) {
-              prevItem.addClass('hover');
-              wordEl.val(prevItem.children(".hintItem_w").html());
+          if (current) {
+            current.classList.remove("hover")
+            let prevItem = current.previousElementSibling;
+            if (prevItem) {
+              prevItem.classList.add('hover');
+              el("#word").value = prevItem.querySelector('.hintItem_w').innerText
             }
           } else {
-            var lastItem = hintCotainer.find(".hintItem:last");
-            lastItem.addClass("hover");
-            wordEl.val(lastItem.children(".hintItem_w").html());
+            let lastItem = el("#wordHint .hintItem:last");
+            lastItem.classList.add('hover');
+            el("#word").value = lastItem.querySelector('.hintItem_w').innerText
           }
         }
       } else if (keycode == "13") {
@@ -247,7 +227,8 @@ $(function () {
         clearTimeout(timeout);
         timeout = setTimeout(function () {
           // 异步请求获取提示词
-          var keyword = $.trim(wordEl.val());
+          console.log(el("#word"))
+          let keyword = el("#word").value.trim();
           if (keyword == "" || keyword == null) {
             return;
           }
@@ -261,68 +242,54 @@ $(function () {
   }
 
   function getSearchData(keyword) {
-    if (ajaxcache.has(keyword)) {
+    if (ajaxcache.hasOwnProperty(keyword)) {
       console.info("---从缓存中查询：" + keyword);
-      var resultMap = ajaxcache.get(keyword);
-      $("#wordHint").empty().css("border", "1px solid #ccc").css("background", "#fff");
-      resultMap.forEach(function (i, n) {
-        $("#wordHint").append(
-          "<div class=\"hintItem\">" + "<span class=\"hintItem_w\">" + n +
-          "</span>" + "<span class=\"hintItem_t\" title=\"" + resultMap.get(n) + "\">" + resultMap.get(n) + "</span>" +
-          "</div>");
-      })
+      let result = ajaxcache[keyword];
+
+      renderSearchList(result)
     } else {
       console.info("***从数据库查询：" + keyword);
-      let reg = new RegExp("s[hz][0-9]{1,6}");
-      if (!reg.test(keyword)) {
+      if (!/s[hz][0-9]{1,6}/.test(keyword)) {
         keyword = keyword.toUpperCase();
-      } 
+      }
 
-      var pattKey = new RegExp(".*" + keyword + ".*");
-      var resultMap = new Map();
+      let pattKey = new RegExp(".*" + keyword + ".*");
       let tmpCount = 0;
+      let len = shArray.length;
 
-      for (i = 0, len = shArray.length; i < len; i++) {
-        let element = shArray[i];
-        if (pattKey.test(element)) {
+      let result = {}
+      for (let i = 0; i < len; i++) {
+        let item = shArray[i];
+        if (pattKey.test(item)) {
           if (tmpCount++ >= 10) break;
-          let _stockmeta = element.split("|", 3);
-          resultMap.set(_stockmeta[0], _stockmeta[1])
+          let stockPair = item.split("|", 3);
+          result[stockPair[0]] = stockPair[1]
         }
       }
 
-      $("#wordHint").empty().css("border", "1px solid #ccc").css("background", "#fff");
-      resultMap.forEach(function (i, n) {
-        $("#wordHint").append(
-          "<div class=\"hintItem\">" + "<span class=\"hintItem_w\">" + n +
-          "</span>" + "<span class=\"hintItem_t\" title=\"" + resultMap.get(n) + "\">" + resultMap.get(n) + "</span>" +
-          "</div>");
-      })
-      ajaxcache.set(keyword, resultMap);
+      renderSearchList(result)
+      ajaxcache[keyword] = result;
     }
   }
 
-  // 点击显示到输入框
-  $(document).on("click", ".hintItem", function () {
-    $("#word").val($(this).children(".hintItem_w").html());
-  })
-  // 鼠标移入
-  $(document).on("mouseover", ".hintItem", function () {
-    $("#word").val($(this).children(".hintItem_w").html());
-  })
-  //点击删除
-  $(document).on("click touchend", ".stock-remove", function () {
-    var stockCode = $(this).siblings(".stock-code").html();
-    chosenArray.delete(stockCode);
-    chrome.storage.sync.set({
-      "stock": array2String(chosenArray, "#")
-    });
-    reBulidList();
-  });
+  function renderSearchList(result) {
+    el("#wordHint").classList.remove('hint-hidden')
+    el("#wordHint").classList.add('hint-show')
+
+    let stockList = Object.keys(result).map(key => `
+      <div class="hintItem">
+        <span class="hintItem_w">${key}</span>
+        <span class="hintItem_t" title="${result[key]}">${result[key]}</span>
+      </div>
+    `)
+
+    el('#wordHint').innerHTML = stockList.join('')
+  }
+
 
   // 自动刷新
   function setPeriodTime() {
-    var autoRefreshTime = $("#period-time").val();
+    let autoRefreshTime = el("#period-time").value;
     // 保存数据
     chrome.storage.sync.set({
       "refreshTime": autoRefreshTime
@@ -342,19 +309,49 @@ $(function () {
     }
     doRefresh();
   }
-  $("#period-time").on("change", setPeriodTime);
 
   // 设置提醒价格
   function setBadgePrice() {
-    let badgePrice = $("#badge-price").val();
+    let badgePrice = el("#badge-price").value;
     // 保存数据
     chrome.storage.sync.set({
       "warningPrice": badgePrice
     });
   }
-  $("#badge-price").on("change", setBadgePrice);
+
+  // 点击添加触发，读取并刷新数据
+  bindEvent("#add-btn", 'click', addToList)
+
+  // 点击刷新触发，读取并刷新数据
+  bindEvent("#getData-btn", 'click', reBulidList)
+
+  // 点击显示到输入框
+  bindEvent(".hintItem", 'click', function () {
+    el('#word').value = this.querySelector('.hintItem_w').innerText
+  })
+
+  // 鼠标移入
+  bindEvent(".hintItem", 'mouseover', function () {
+    el('#word').value = this.querySelector('.hintItem_w').innerText
+  })
+
+  // 点击删除
+  bindEvent(".stock-remove", "click", function () {
+    let stockCode = this.parentElement.querySelector('.stock-code').innerText
+    watchingStockList = watchingStockList.filter(_code => _code !== stockCode)
+    chrome.storage.sync.set({
+      "stock": watchingStockList.join('#')
+    });
+    reBulidList();
+  });
+
+  // 刷新周期
+  bindEvent("#period-time", "change", setPeriodTime);
+
+  // 提示价格
+  bindEvent("#badge-price", "change", setBadgePrice);
 
   initList();
   searchHint(getSearchData);
   listDragController();
-});
+}

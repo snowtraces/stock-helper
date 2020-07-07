@@ -1,16 +1,38 @@
+
 /**
- * 数组转字符串
- * @param array
- * @param separator
- * @returns {*}
+ * dom选择
  */
-function array2String(array, separator) {
-  if (!array) return "";
-  var resultStr = "";
-  array.forEach(element => {
-    resultStr = resultStr + element + separator;
-  });
-  return resultStr.substr(0, resultStr.length - 1);
+const el = (selector) => document.querySelector(selector)
+const elAll = (selector) => document.querySelectorAll(selector)
+
+/**
+ * 事件绑定
+ */
+const bindEvent = (selector, event, func) => {
+  const nodeList = elAll(selector)
+  if (!nodeList || nodeList.length === 0) {
+    bindEventForce(selector, event, func)
+  } else {
+    let eventList = event.split(' ').map(e => e.trim())
+    nodeList.forEach(
+      node => eventList.forEach(e => node.addEventListener(e, func, false))
+    )
+  }
+}
+
+/**
+ * 事件绑定委托，默认使用document处理event
+ */
+const bindEventForce = function (selector, event, func, delegation) {
+  let eventList = event.split(' ').map(e => e.trim())
+  eventList.forEach(e => {
+    (delegation ? el(delegation) : document).addEventListener(e, (_e) => {
+      const _list = elAll(selector)
+      _list.forEach(
+        item => (_e.target === item || item.contains(_e.target)) && func.call(item, _e)
+      )
+    }, false)
+  })
 }
 
 /**
@@ -18,7 +40,7 @@ function array2String(array, separator) {
  * @param url
  * @param callback
  */
-function httpRequest(url, callback) {
+const httpRequest = function (url, callback) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
   xhr.onreadystatechange = function () {
@@ -34,7 +56,7 @@ function httpRequest(url, callback) {
  * @param text
  * @returns {string|XML|void}
  */
-function unicodeToChar(text) {
+const unicodeToChar = function (text) {
   return text.replace(/\\u[\dA-F]{4}/gi,
     function (match) {
       return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
@@ -47,11 +69,11 @@ function unicodeToChar(text) {
  * @param currentPrice
  * @returns {number}
  */
-function calcChange(yesterDayEndPrice, currentPrice) {
+const calcChange = function (yesterDayEndPrice, currentPrice) {
   if (currentPrice == 0) return 99;
   var change = (currentPrice - yesterDayEndPrice) / yesterDayEndPrice;
   if (isNaN(change)) {
-    return 99;
+    return null;
   } else {
     change = (change * 100).toFixed(2);
     return change;
@@ -61,20 +83,20 @@ function calcChange(yesterDayEndPrice, currentPrice) {
 /**
  * 判断开市时间
  */
-function checkTime(){
+const checkTime = function () {
   let date = new Date();
 
   // 判断是否为周末
   let day = date.getDay();
-  if(day == 6 || day == 0){
+  if (day == 6 || day == 0) {
     return flase;
   }
 
   //判断当前时间
   // [4500, 12600] [18000, 25200]
-  let timestamp=Math.round(date.getTime()/1000);
+  let timestamp = Math.round(date.getTime() / 1000);
   let remainder = timestamp % 86400;
-  if( (remainder > 4500 && remainder < 12600) || (remainder > 18000 && remainder < 25200)){
+  if ((remainder > 4500 && remainder < 12600) || (remainder > 18000 && remainder < 25200)) {
     return true;
   } else {
     return false;
@@ -84,7 +106,7 @@ function checkTime(){
 /**
  * 图标通知
  */
-function setBadge(number, color) {
+const setBadge = function (number, color) {
   chrome.browserAction.setBadgeBackgroundColor({
     'color': color
   });
@@ -96,7 +118,7 @@ function setBadge(number, color) {
 /**
  * title提示
  */
-function setTitle(titleStr) {
+const setTitle = function (titleStr) {
   chrome.browserAction.setTitle({
     title: titleStr
   });
@@ -105,7 +127,7 @@ function setTitle(titleStr) {
 /**
  * 桌面通知
  */
-function setNotify(notifyStr) {
+const setNotify = function (notifyStr) {
   var options = {
     dir: "ltr", //控制方向，据说目前浏览器还不支持
     lang: "utf-8",

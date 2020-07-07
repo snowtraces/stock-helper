@@ -64,6 +64,17 @@ body {
     min-height: 24em;
 }
 
+.hint-hidden {
+    border: 1px solid transparent;
+    background: transparent;
+}
+
+.hint-show {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+
+}
+
 .main {
     margin-bottom: 4em;
 }
