@@ -5,7 +5,8 @@
   let dynamicStockData = {};
   let basePath = "http://hq.sinajs.cn/?list=";
   let refreshTimeout = 0;
-  let shArray = new Array();
+  let shArray = []
+  let warningPrice = 0;
 
   /**
    * 隐藏提示内容

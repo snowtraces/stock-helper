@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Stock Helper",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "股票信息，价格提示",
 	"icons": {
 		"16": "images/stocks16.png",

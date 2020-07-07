@@ -1,43 +1,43 @@
 {
 
-  var ajaxcache = new Map();
-  var chosenArray = new Set();
-  var resultMap = new Map();
-  var basePath = "http://hq.sinajs.cn/?list=";
-  var dataPre = "hq_str_";
-  var refreshTimeout = 0;
-  var warningPrice = 0;
-  var autoRefreshTime = 0;
+  let watchingStockList = [];
+  let dynamicStockData = {};
+  let basePath = "http://hq.sinajs.cn/?list=";
+  let refreshTimeout = 0;
+  let autoRefreshTime = 0;
+  let warningPrice = 0;
 
-  // 动态加载数据，加载完成后回调读取数据
-  function loadScript(url, callback) {
-    resultMap.clear();
+  /**
+   * 动态加载数据，加载完成后回调读取数据
+   */
+  const getCurrentPrice = function (url, callback) {
+    dynamicStockData = {}
     httpRequest(url, function (result) {
-      // 读取string，结果放入本地
+      let stockLines = result.split(';');
+      stockLines.pop();
+
       let reg = /var hq_str_(.*)=\"(.*)\"/gi;
-      let stockArray = result.split(";");
-      stockArray.pop();
-      stockArray.forEach(element => {
-        element.match(reg);
-        resultMap.set(RegExp.$1, RegExp.$2.split(","));
+      stockLines.forEach(line => {
+        line.match(reg);
+        dynamicStockData[RegExp.$1] = RegExp.$2.split(",");
       });
       callback();
     });
   }
 
-  // 初始化列表
-  function initList() {
+   /**
+   * 初始化列表
+   */
+  const initList = function () {
     chrome.storage.sync.get(["stock", "refreshTime", "warningPrice"], function (obj) {
       // 股票列表
       if (obj.stock) {
-        let temArray = obj.stock.split("#");
-        chosenArray = new Set(temArray);
+        watchingStockList = obj.stock.split("#");
       }
       // 设置自动刷新时间
       if (obj.refreshTime) {
         setPeriodTime(obj.refreshTime);
       }
-
       // 设置提醒价格
       if (obj.warningPrice) {
         warningPrice = obj.warningPrice;
@@ -52,14 +52,13 @@
     if (autoRefreshTime <= 0) return;
     chrome.storage.sync.get(["stock", "warningPrice"], function (obj) {
       warningPrice = obj.warningPrice * 1;
-      let temArray = obj.stock.split("#");
-      chosenArray = new Set(temArray);
+      watchingStockList = obj.stock.split("#");
     });
-    chosenArray.forEach(element => {
-      var dataArray = resultMap.get(element);
+    watchingStockList.forEach(stockCode => {
+      var dataArray = dynamicStockData[stockCode];
       if (dataArray) {
         var change = calcChange(dataArray[2], dataArray[3]);
-        if (change != 99) {
+        if (change !== null) {
           let tag = change > 0 ? "red" : (change < 0 ? "green" : "");
           if (Math.abs(change) >= warningPrice) titleInfo = titleInfo + dataArray[0] + "   " + change + "\n";
           if (warningPrice > 0 && Math.abs(change) >= warningPrice && badgeFlage == 1) {
@@ -79,14 +78,10 @@
 
   // 重建列表
   function reBulidList() {
-    if (chosenArray.size <= 0) {
+    if (dynamicStockData.size <= 0) {
       return;
     }
-    var path = basePath;
-    chosenArray.forEach(element => {
-      path = path + element + ",";
-    });
-    loadScript(path, refreshList);
+    getCurrentPrice(basePath + watchingStockList.join(','), refreshList);
   }
 
   // 自动刷新
