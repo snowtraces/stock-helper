@@ -39,13 +39,19 @@
    * 初始化列表
    */
   const initList = function () {
-    httpRequest("http://www.cninfo.com.cn/new/data/szse_stock.json", function (result) {
-      let stockList = JSON.parse(result).stockList;
-      stockList.forEach(stock => {
-        let code = stock.code;
-        let prefix = code.startsWith('6') ? 'sh' : 'sz'
-        allStockArray.push(`${prefix}${stock.code}|${stock.zwjc}|${stock.pinyin.toUpperCase()}`);
-      });
+    let dataUrls = [
+      'http://www.cninfo.com.cn/new/data/szse_stock.json',
+      'http://www.cninfo.com.cn/new/data/fund_stock.json'
+    ]
+    dataUrls.forEach(url => {
+      httpRequest(url, function (result) {
+        let stockList = JSON.parse(result).stockList;
+        stockList.forEach(stock => {
+          let code = stock.code;
+          let prefix = code.startsWith('6') ? 'sh' : 'sz'
+          allStockArray.push(`${prefix}${stock.code}|${stock.zwjc}|${stock.pinyin.toUpperCase()}`);
+        });
+      })
     })
 
     chrome.storage.sync.get(["stock", "refreshTime", "warningPrice"], function (obj) {
@@ -201,7 +207,7 @@
               el("#word").value = nextItem.querySelector('.hintItem_w').innerText
             }
           } else {
-            let firstItem = el("#wordHint .hintItem:first");
+            let firstItem = el("#wordHint .hintItem:first-child");
             firstItem.classList.add('hover');
             el("#word").value = firstItem.querySelector('.hintItem_w').innerText
           }
@@ -214,7 +220,7 @@
               el("#word").value = prevItem.querySelector('.hintItem_w').innerText
             }
           } else {
-            let lastItem = el("#wordHint .hintItem:last");
+            let lastItem = el("#wordHint .hintItem:last-child");
             lastItem.classList.add('hover');
             el("#word").value = lastItem.querySelector('.hintItem_w').innerText
           }
