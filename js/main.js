@@ -5,7 +5,7 @@
   let dynamicStockData = {};
   let basePath = "http://hq.sinajs.cn/?list=";
   let refreshTimeout = 0;
-  let shArray = []
+  let allStockArray = []
   let warningPrice = 0;
 
   /**
@@ -39,13 +39,12 @@
    * 初始化列表
    */
   const initList = function () {
-    httpRequest("http://www.sse.com.cn/js/common/ssesuggestdataAll.js", function (result) {
-      let reg = /_t\.push\({val:\"([0-9]{6})\",val2:\"(.*)\",val3:\"(.*)\"}\)/gi;
-      let allStock = result.split(";");
-      allStock.shift();
-      allStock.forEach(element => {
-        element.match(reg);
-        shArray.push("sh" + RegExp.$1 + "|" + RegExp.$2 + "|" + RegExp.$3.toUpperCase());
+    httpRequest("http://www.cninfo.com.cn/new/data/szse_stock.json", function (result) {
+      let stockList = JSON.parse(result).stockList;
+      stockList.forEach(stock => {
+        let code = stock.code;
+        let prefix = code.startsWith('6') ? 'sh' : 'sz'
+        allStockArray.push(`${prefix}${stock.code}|${stock.zwjc}|${stock.pinyin.toUpperCase()}`);
       });
     })
 
@@ -256,11 +255,11 @@
 
       let pattKey = new RegExp(".*" + keyword + ".*");
       let tmpCount = 0;
-      let len = shArray.length;
+      let len = allStockArray.length;
 
       let result = {}
       for (let i = 0; i < len; i++) {
-        let item = shArray[i];
+        let item = allStockArray[i];
         if (pattKey.test(item)) {
           if (tmpCount++ >= 10) break;
           let stockPair = item.split("|", 3);

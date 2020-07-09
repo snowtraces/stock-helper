@@ -26,6 +26,7 @@
 		"*://hq.sinajs.cn/?list=*",
 		"*://www.sse.com.cn/js/common/*",
 		"*://www.ctxalgo.com/api/*",
+		"*://www.cninfo.com.cn/new/data/*",
 		"storage",
 		"notifications"
 	]
