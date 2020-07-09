@@ -207,7 +207,7 @@
               el("#word").value = nextItem.querySelector('.hintItem_w').innerText
             }
           } else {
-            let firstItem = el("#wordHint .hintItem:first");
+            let firstItem = el("#wordHint .hintItem:first-child");
             firstItem.classList.add('hover');
             el("#word").value = firstItem.querySelector('.hintItem_w').innerText
           }
@@ -220,7 +220,7 @@
               el("#word").value = prevItem.querySelector('.hintItem_w').innerText
             }
           } else {
-            let lastItem = el("#wordHint .hintItem:last");
+            let lastItem = el("#wordHint .hintItem:last-child");
             lastItem.classList.add('hover');
             el("#word").value = lastItem.querySelector('.hintItem_w').innerText
           }
