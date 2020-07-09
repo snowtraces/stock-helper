@@ -70,7 +70,7 @@ const unicodeToChar = function (text) {
  * @returns {number}
  */
 const calcChange = function (yesterDayEndPrice, currentPrice) {
-  if (currentPrice == 0) return 99;
+  if (currentPrice == 0) return null;
   var change = (currentPrice - yesterDayEndPrice) / yesterDayEndPrice;
   if (isNaN(change)) {
     return null;
