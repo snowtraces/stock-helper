@@ -360,4 +360,29 @@
   initList();
   searchHint(getSearchData);
   listDragController();
+
+
+  chrome.webRequest.onBeforeSendHeaders.addListener(
+    function (details) {
+      if (details.type === 'xmlhttprequest') {
+        var exists = false;
+        for (var i = 0; i < details.requestHeaders.length; ++i) {
+          if (details.requestHeaders[i].name === 'Referer') {
+            exists = true;
+            details.requestHeaders[i].value = 'http://finance.sina.com.cn/';
+            break;
+          }
+        }
+
+        if (!exists) {
+          details.requestHeaders.push({ name: 'Referer', value: 'http://finance.sina.com.cn/' });
+        }
+
+        return { requestHeaders: details.requestHeaders };
+      }
+    },
+    { urls: ['http://hq.sinajs.cn/?list=*'] },
+    ["blocking", "requestHeaders", "extraHeaders"]
+  );
+
 }
