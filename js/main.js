@@ -361,28 +361,33 @@
   searchHint(getSearchData);
   listDragController();
 
+  chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+    console.log(rules)
+  })
 
-  chrome.webRequest.onBeforeSendHeaders.addListener(
-    function (details) {
-      if (details.type === 'xmlhttprequest') {
-        var exists = false;
-        for (var i = 0; i < details.requestHeaders.length; ++i) {
-          if (details.requestHeaders[i].name === 'Referer') {
-            exists = true;
-            details.requestHeaders[i].value = 'http://finance.sina.com.cn/';
-            break;
-          }
-        }
-
-        if (!exists) {
-          details.requestHeaders.push({ name: 'Referer', value: 'http://finance.sina.com.cn/' });
-        }
-
-        return { requestHeaders: details.requestHeaders };
-      }
-    },
-    { urls: ['http://hq.sinajs.cn/?list=*'] },
-    ["blocking", "requestHeaders", "extraHeaders"]
-  );
+  chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: [
+      {
+        id: 1,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          requestHeaders: [
+            {
+              header: 'Referer',
+              operation: 'set',
+              value: 'http://finance.sina.com.cn/'
+            },
+          ],
+        },
+        condition: {
+          urlFilter: 'http://hq.sinajs.cn/?list=*',
+          resourceTypes: ['csp_report', 'font', 'image', 'main_frame', 'media', 'object', 'other', 'ping', 'script',
+            'stylesheet', 'sub_frame', 'webbundle', 'websocket', 'webtransport', 'xmlhttprequest']
+        },
+      },
+    ],
+    removeRuleIds: [1]
+  });
 
 }

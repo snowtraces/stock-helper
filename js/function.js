@@ -107,10 +107,10 @@ const checkTime = function () {
  * 图标通知
  */
 const setBadge = function (number, color) {
-  chrome.browserAction.setBadgeBackgroundColor({
+  chrome.action.setBadgeBackgroundColor({
     'color': color
   });
-  chrome.browserAction.setBadgeText({
+  chrome.action.setBadgeText({
     text: number
   });
 }
@@ -119,7 +119,7 @@ const setBadge = function (number, color) {
  * title提示
  */
 const setTitle = function (titleStr) {
-  chrome.browserAction.setTitle({
+  chrome.action.setTitle({
     title: titleStr
   });
 }
